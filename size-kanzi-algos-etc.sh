@@ -5,6 +5,7 @@
 #   testing of a few other compressors and the level 1-9 kanzi presets.
 #   This script is _not_ for speed testing.  The parallelly looped kanzis are single-threaded.
 # Changes:
+#   ukd v05 2024-01-03: Add more 256m kanzi tests useful for syslogs; reorder transforms in multi-level loops
 #   ukd v04 2025-01-02: Add more block sizes, more multi-threading before GNU parallel loops, more flexibility,
 #                       MM instead of DNA in 2+-level loops, ...
 #   ukd v03 2024-11-30: Add kanzi -l X with blocksize 64M too; add -x64 to all kanzi; add zpaq -m46; add xz 9e;
@@ -70,12 +71,15 @@ for o in {2..32}; do
 	   $(t=`mktemp -u` && 7za a -m0=ppmd:mem=26:o=$o $t "$ifile" > /dev/null && wc -c < $t && rm $t)
 done
 
-# 7za ppmd order 14 with buffer size 256 MiB
+# 7za ppmd order 14 with 256 MiB memory
 printf "%9d 7za a -m0=ppmd:mem=28:o=14\n" \
        $(t=`mktemp -u` && 7za a -m0=ppmd:mem=28:o=14 $t "$ifile" > /dev/null && wc -c < $t && rm $t)
-# 7za ppmd order 32 with buffer size 256 MiB
+# 7za ppmd order 32 with 256 MiB memory
 printf "%9d 7za a -m0=ppmd:mem=28:o=32\n" \
        $(t=`mktemp -u` && 7za a -m0=ppmd:mem=28:o=32 $t "$ifile" > /dev/null && wc -c < $t && rm $t)
+# 7za ppmd order 32 with 2048 MiB memory
+printf "%9d 7za a -m0=ppmd:mem=31:o=32\n" \
+       $(t=`mktemp -u` && 7za a -m0=ppmd:mem=31:o=32 $t "$ifile" > /dev/null && wc -c < $t && rm $t)
 
 # kanzi level 1 to 9 with the default blocksize for each level (higher levels default to larger sizes)
 for level in {1..9}; do
@@ -87,17 +91,25 @@ for level in {1..9}; do
     printf "%9d kanzi -x64 -b 64m -l $level -j 1\n" $(kanzi -c -x64 -b 64m -l $level -j 1 -i "$ifile" -o stdout|wc -c)
 done
 
-# kanzi larger blocks for level 9 and custom transforms (suitable for e.g. large systemd journalctl(1) outputs)
+# kanzi larger blocks for level 9 and custom transforms (good for large systemd journalctl(1) outputs, especially with systemd-coredump text)
 printf "%9d kanzi -x64 -b  96m -l 9 -j 4\n" $(kanzi -c -x64 -b  96m -l 9 -j 3 -i "$ifile" -o stdout|wc -c)
 printf "%9d kanzi -x64 -b 128m -l 9 -j 2\n" $(kanzi -c -x64 -b 128m -l 9 -j 2 -i "$ifile" -o stdout|wc -c)
 printf "%9d kanzi -x64 -b 256m -l 9 -j 1\n" $(kanzi -c -x64 -b 256m -l 9 -j 1 -i "$ifile" -o stdout|wc -c)
-printf "%9d kanzi -x64 -b 256m -t RLT+PACK       -e TPAQX -j 1\n" $(kanzi -c -x64 -b 256m -t RLT+PACK       -e TPAQX -j 1 -i "$ifile" -o stdout|wc -c)
-printf "%9d kanzi -x64 -b 256m -t RLT+TEXT+PACK  -e TPAQX -j 1\n" $(kanzi -c -x64 -b 256m -t RLT+TEXT+PACK  -e TPAQX -j 1 -i "$ifile" -o stdout|wc -c)
-printf "%9d kanzi -x64 -b 256m -t TEXT+ZRLT+PACK -e TPAQX -j 1\n" $(kanzi -c -x64 -b 256m -t TEXT+ZRLT+PACK -e TPAQX -j 1 -i "$ifile" -o stdout|wc -c)
-printf "%9d kanzi -x64 -b 256m -t TEXT+RLT+PACK  -e TPAQX -j 1\n" $(kanzi -c -x64 -b 256m -t TEXT+RLT+PACK  -e TPAQX -j 1 -i "$ifile" -o stdout|wc -c)
+for trans in \
+    RLT+PACK              RLT+TEXT+PACK         \
+    RLT+PACK+LZP          RLT+PACK+LZP+RLT      \
+    TEXT+ZRLT+PACK        RLT+LZP+PACK+RLT      \
+    TEXT+ZRLT+PACK+LZP    TEXT+RLT+PACK         \
+    TEXT+RLT+LZP          TEXT+RLT+PACK+LZP     \
+    TEXT+RLT+LZP+RLT      TEXT+RLT+PACK+LZP+RLT \
+    TEXT+RLT+LZP+PACK     TEXT+RLT+PACK+RLT+LZP \
+    TEXT+RLT+LZP+PACK+RLT
+do
+    printf "%9d kanzi -x64 -b 256m -t $trans -e TPAQX -j 1\n" $(kanzi -c -x64 -b 256m -t $trans -e TPAQX -j 1 -i "$ifile" -o stdout|wc -c)
+done
 
 # kanzi with one transform (including NONE) and one entropy coding, testing 8 in parallel, forcing blocksize 64 MiB
-#   (for 2+ transforms we will drop the last 2 in trans_list)
+#   (for 2+ transforms we will drop the last 2 in trans_list and reorder the rest)
 trans_list="NONE PACK BWT BWTS LZ LZX LZP ROLZ ROLZX RLT ZRLT MTFT RANK SRT TEXT EXE MM UTF DNA"
 entropy_list="NONE HUFFMAN ANS0 ANS1 RANGE CM FPAQ TPAQ TPAQX"
 for t1 in $trans_list; do
@@ -106,7 +118,7 @@ for t1 in $trans_list; do
     done
 done | parallel -j8 'printf "%9d kanzi {=uq=}\n" $(kanzi -c -j 1 {=uq=} -i "$ifile" -o stdout|wc -c)'
 
-trans_list="PACK BWT BWTS LZ LZX LZP ROLZ ROLZX RLT ZRLT MTFT RANK SRT TEXT EXE MM"
+trans_list="TEXT RLT LZP PACK ZRLT BWTS MTFT BWT LZ LZX ROLZ ROLZX RANK SRT EXE MM"
 
 # kanzi with two non-null transforms and one entropy coding, testing 8 in parallel, forcing blocksize 64 MiB
 for t1 in $trans_list; do
