@@ -5,7 +5,8 @@
 #   testing of a few other compressors and the level 1-9 kanzi presets.
 #   This script is _not_ for speed testing.  The parallelly looped kanzis are single-threaded.
 # Changes:
-#   ukd v05 2024-01-03: Add more 256m kanzi tests useful for syslogs; reorder transforms in multi-level loops
+#   ukd v.. ..........: See https://github.com/udickow/kanzi-testing-scripts for later versions
+#   ukd v05 2025-01-03: Add more 256m kanzi tests useful for syslogs; reorder transforms in multi-level loops
 #   ukd v04 2025-01-02: Add more block sizes, more multi-threading before GNU parallel loops, more flexibility,
 #                       MM instead of DNA in 2+-level loops, ...
 #   ukd v03 2024-11-30: Add kanzi -l X with blocksize 64M too; add -x64 to all kanzi; add zpaq -m46; add xz 9e;
@@ -92,7 +93,7 @@ for level in {1..9}; do
 done
 
 # kanzi larger blocks for level 9 and custom transforms (good for large systemd journalctl(1) outputs, especially with systemd-coredump text)
-printf "%9d kanzi -x64 -b  96m -l 9 -j 4\n" $(kanzi -c -x64 -b  96m -l 9 -j 3 -i "$ifile" -o stdout|wc -c)
+printf "%9d kanzi -x64 -b  96m -l 9 -j 3\n" $(kanzi -c -x64 -b  96m -l 9 -j 3 -i "$ifile" -o stdout|wc -c)
 printf "%9d kanzi -x64 -b 128m -l 9 -j 2\n" $(kanzi -c -x64 -b 128m -l 9 -j 2 -i "$ifile" -o stdout|wc -c)
 printf "%9d kanzi -x64 -b 256m -l 9 -j 1\n" $(kanzi -c -x64 -b 256m -l 9 -j 1 -i "$ifile" -o stdout|wc -c)
 for trans in \
