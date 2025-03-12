@@ -124,3 +124,7 @@ $ calc '1787319/616508;616508/605669;605669/555140;555140/489820'
 This example shows that in some cases kanzi is very sensitive to block size -- bigger is not always better --
 but that with careful tuning it may beat even (untuned) zpaq considerably on size even though being
 approximately a factor 10 faster than zpaq with these options.
+
+## More test results
+
+More test results and more detailed descriptions of the test files can be found in the [wiki](https://github.com/udickow/kanzi-testing-scripts/wiki).
