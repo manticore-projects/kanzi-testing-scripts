@@ -15,7 +15,7 @@
 #                       compression ratio by as much as 2.6% going from 8m to 16m even for only 3.6m input
 
 if [ $# -ne 1 -o ! -r "$1" ]; then
-    echo "Usage: $0 FILE"
+    echo "Usage: $0 FILE" >&2
     exit 1
 fi
 
@@ -34,23 +34,28 @@ printf '%9d lz4 -12\n' $(lz4 -12c "$ifile"|wc -c)
 printf '%9d zstd -19\n' $(zstd -19c "$ifile"|wc -c)
 printf '%9d zstd --ultra -22\n' $(zstd --ultra -22c "$ifile"|wc -c)
 printf '%9d bzip2\n' $(bzip2 -c "$ifile"|wc -c)
-printf '%9d xz\n'    $(xz -c "$ifile"|wc -c)
-printf '%9d xz -e\n' $(xz -ec "$ifile"|wc -c)
-printf '%9d xz -9e\n' $(xz -9ec "$ifile"|wc -c)
-printf '%9d xz --lzma2=preset=9e,dict=256MiB\n' $(xz -c --lzma2=preset=9e,dict=256MiB "$ifile"|wc -c)
-printf '%9d xz --lzma2=preset=6,lc=4,pb=0\n' $(xz -c --lzma2=preset=6,lc=4,pb=0 "$ifile"|wc -c)
-printf '%9d xz --lzma2=preset=6e,lc=4,pb=0\n' $(xz -c --lzma2=preset=6e,lc=4,pb=0 "$ifile"|wc -c)
-printf '%9d xz --lzma2=preset=9e,lc=4,pb=0\n' $(xz -c --lzma2=preset=9e,lc=4,pb=0 "$ifile"|wc -c)
-printf '%9d xz --lzma2=preset=9e,lc=4,pb=0,dict=256MiB\n' $(xz -c --lzma2=preset=9e,lc=4,pb=0,dict=256MiB "$ifile"|wc -c)
-printf '%9d xz --delta=dist=4 --lzma2=preset=7e,lc=4\n'   $(xz -c --delta=dist=4 --lzma2=preset=7e,lc=4 "$ifile"|wc -c)
+
+# NB: For xz version <= 5.4.x (e.g. Fedora 36) -T1 was default; in newer -T0 is default.  We stick with -T1.
+printf '%9d xz -T1\n'    $(xz -c -T1 "$ifile"|wc -c)
+printf '%9d xz -T1 -e\n' $(xz -ec -T1 "$ifile"|wc -c)
+printf '%9d xz -T1 -9e\n' $(xz -9ec -T1 "$ifile"|wc -c)
+printf '%9d xz -T1 --lzma2=preset=9e,dict=256MiB\n' $(xz -c -T1 --lzma2=preset=9e,dict=256MiB "$ifile"|wc -c)
+printf '%9d xz -T1 --lzma2=preset=6,lc=4,pb=0\n' $(xz -c -T1 --lzma2=preset=6,lc=4,pb=0 "$ifile"|wc -c)
+printf '%9d xz -T1 --lzma2=preset=6e,lc=4,pb=0\n' $(xz -c -T1 --lzma2=preset=6e,lc=4,pb=0 "$ifile"|wc -c)
+printf '%9d xz -T1 --lzma2=preset=9e,lc=4,pb=0\n' $(xz -c -T1 --lzma2=preset=9e,lc=4,pb=0 "$ifile"|wc -c)
+printf '%9d xz -T1 --lzma2=preset=9e,lc=4,pb=0,dict=256MiB\n' $(xz -c -T1 --lzma2=preset=9e,lc=4,pb=0,dict=256MiB "$ifile"|wc -c)
+printf '%9d xz -T1 --delta=dist=4 --lzma2=preset=7e,lc=4\n'   $(xz -c -T1 --delta=dist=4 --lzma2=preset=7e,lc=4 "$ifile"|wc -c)
+
+# For bzip3 the output is independent of number of jobs so no need to tell about it.  Just respect NJOBS for size <= 64m.
 printf '%9d bzip3\n' $(bzip3 -c -j$NJOBS "$ifile"|wc -c)
-printf '%9d bzip3 -b32\n' $(bzip3 -c -j$NJOBS -b32 "$ifile"|wc -c)
-printf '%9d bzip3 -b64\n' $(bzip3 -c -j$NJOBS -b64 "$ifile"|wc -c)
-printf '%9d bzip3 -b128\n' $(bzip3 -c -b128 "$ifile"|wc -c)
-printf '%9d bzip3 -b256\n' $(bzip3 -c -b256 "$ifile"|wc -c)
+printf '%9d bzip3 -b32\n'  $(bzip3 -c -b32  -j$NJOBS "$ifile"|wc -c)
+printf '%9d bzip3 -b64\n'  $(bzip3 -c -b64  -j$NJOBS "$ifile"|wc -c)
+printf '%9d bzip3 -b128\n' $(bzip3 -c -b128 -j2      "$ifile"|wc -c)
+printf '%9d bzip3 -b256\n' $(bzip3 -c -b256 -j1      "$ifile"|wc -c)
 
 printf '%9d lrzip -p1 \n'  $(lrzip -p1 -qo- "$ifile"|wc -c)
 printf '%9d lrzip -zp1 \n' $(lrzip -zp1 -qo- "$ifile"|wc -c)
+
 printf '%9d zpaq a ... -m46\n' \
        $(t=`mktemp` && zpaq a $t "$ifile" -m46 >& /dev/null && wc -c < $t && rm $t)
 printf '%9d zpaq a ... -m53\n' \
@@ -61,6 +66,7 @@ printf "%9d zpaq a ... -m57 -t$NJOBS\n" \
        $(t=`mktemp` && zpaq a $t "$ifile" -m57 -t$NJOBS >& /dev/null && wc -c < $t && rm $t)
 printf "%9d zpaq a ... -m58 -t$NJOBS\n" \
        $(t=`mktemp` && zpaq a $t "$ifile" -m58 -t$NJOBS >& /dev/null && wc -c < $t && rm $t)
+
 printf '%9d arj\n' \
        $(t=`mktemp -u` && arj a $t "$ifile" > /dev/null && wc -c < $t && rm $t)
 printf '%9d 7za a -m0=ppmd\n' \
@@ -82,22 +88,24 @@ printf "%9d 7za a -m0=ppmd:mem=28:o=32\n" \
 printf "%9d 7za a -m0=ppmd:mem=31:o=32\n" \
        $(t=`mktemp -u` && 7za a -m0=ppmd:mem=31:o=32 $t "$ifile" > /dev/null && wc -c < $t && rm $t)
 
-# kanzi level 1 to 9 with the default blocksize for each level (higher levels default to larger sizes)
+# kanzi level 1 to 9 with the default blocksize for each level (higher levels default to larger sizes).
+#   Output is independent of number of jobs (unlike for xz(1)) so respect NJOBS here, silently.
 for level in {1..9}; do
-    printf "%9d kanzi -x64 -l $level -j 1\n" $(kanzi -c -x64 -l $level -j 1 -i "$ifile" -o stdout|wc -c)
+    printf "%9d kanzi -x64 -l $level\n" $(kanzi -c -x64 -l $level -j "$NJOBS" -i "$ifile" -o stdout|wc -c)
 done
 
 # kanzi level 1 to 9 with 64m blocksize for all levels
 for level in {1..9}; do
-    printf "%9d kanzi -x64 -b 64m -l $level -j 1\n" $(kanzi -c -x64 -b 64m -l $level -j 1 -i "$ifile" -o stdout|wc -c)
+    printf "%9d kanzi -x64 -b 64m -l $level\n" $(kanzi -c -x64 -b 64m -l $level -j "$NJOBS" -i "$ifile" -o stdout|wc -c)
 done
 
 # kanzi larger blocks for level 9 and for some of the more interesting combinations of transforms
 # (PACK ones good for large systemd journalctl(1) outputs, especially with many identical systemd-coredumps;
-#  BWT/BWTS ones good for e.g. Fedora Linux /var/log/boot.log files with thousands of similar boots)
-printf "%9d kanzi -x64 -b  96m -l 9 -j 3\n" $(kanzi -c -x64 -b  96m -l 9 -j 3 -i "$ifile" -o stdout|wc -c)
-printf "%9d kanzi -x64 -b 128m -l 9 -j 2\n" $(kanzi -c -x64 -b 128m -l 9 -j 2 -i "$ifile" -o stdout|wc -c)
-printf "%9d kanzi -x64 -b 256m -l 9 -j 1\n" $(kanzi -c -x64 -b 256m -l 9 -j 1 -i "$ifile" -o stdout|wc -c)
+#  BWT/BWTS ones good for e.g. Fedora Linux /var/log/boot.log files with hundreds or more similar boots).
+# Here we hardcode a low number of jobs to not use much more memory than block size 256m would require.
+printf "%9d kanzi -x64 -b  96m -l 9\n" $(kanzi -c -x64 -b  96m -l 9 -j 3 -i "$ifile" -o stdout|wc -c)
+printf "%9d kanzi -x64 -b 128m -l 9\n" $(kanzi -c -x64 -b 128m -l 9 -j 2 -i "$ifile" -o stdout|wc -c)
+printf "%9d kanzi -x64 -b 256m -l 9\n" $(kanzi -c -x64 -b 256m -l 9 -j 1 -i "$ifile" -o stdout|wc -c)
 for trans in \
     RLT                   PACK                  \
     PACK+ZRLT+PACK        PACK+RLT              \
@@ -113,7 +121,7 @@ for trans in \
     TEXT+BWTS+MTFT+RLT    BWTS+MTFT+RLT         \
     TEXT+BWT+MTFT+RLT     BWT+MTFT+RLT
 do
-    printf "%9d kanzi -x64 -b 256m -t $trans -e TPAQX -j 1\n" $(kanzi -c -x64 -b 256m -t $trans -e TPAQX -j 1 -i "$ifile" -o stdout|wc -c)
+    printf "%9d kanzi -x64 -b 256m -t $trans -e TPAQX\n" $(kanzi -c -x64 -b 256m -t $trans -e TPAQX -j 1 -i "$ifile" -o stdout|wc -c)
 done
 
 # kanzi with blocksize 64 MiB and 4 transforms but only the 24 combinations with
@@ -141,7 +149,7 @@ for t1 in $trans_list; do
     done
 done | parallel -j$NJOBS 'printf "%9d kanzi {=uq=}\n" $(kanzi -c -j 1 {=uq=} -i "$ifile" -o stdout|wc -c)'
 
-trans_list="TEXT RLT LZP PACK ZRLT BWTS MTFT BWT LZ LZX ROLZ ROLZX RANK SRT EXE MM"
+trans_list="TEXT PACK ZRLT RLT BWTS BWT LZP MTFT SRT LZ LZX ROLZ ROLZX RANK EXE MM"
 
 # kanzi with two non-null transforms and one entropy coding, testing NJOBS in parallel, forcing blocksize 64 MiB
 for t1 in $trans_list; do
