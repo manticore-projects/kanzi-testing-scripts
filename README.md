@@ -46,7 +46,57 @@ decompression than for the recompression.  The script also does this:
 * adds 64-bit checksum at end of each block (option -x64 to kanzi) no matter if in original or not
 * adds decompressed file size in file header (since compression done of real file, not from pipe)
 
-See comments in script for more detail.
+See comments in script for more detail.  Example run:
+```
+$ ll
+totalt 12
+lrwxrwxrwx. 1 ukd ukd 35 17 jul 15:54 symlink-to-ignore.knz -> test.txt.knz-old-tLZX_eNONE-no-size
+-rw-r-----. 1 ukd ukd 53 15 jul 11:09 test.txt.knz-new-tNONE_eTPAQ-no-size
+-rwxr-xr-x. 1 ukd ukd 52 15 jul 11:30 test.txt.knz-old-tLZX_eNONE-no-size
+
+### Will fail on new file but work for old:
+
+$ OLDKANZI=kanzi.old ../recompress-old-kanzi-files.sh *.knz*
+../recompress-old-kanzi-files.sh: 'symlink-to-ignore.knz' skipped because not a regular file or not readable
+Invalid bitstream, header checksum mismatch. Error code: 19
+../recompress-old-kanzi-files.sh: Error decompressing 'test.txt.knz-new-tNONE_eTPAQ-no-size', skipping it (consider changing OLDKANZI)
+test.txt.knz-old-tLZX_eNONE-no-size : OK
+
+$ ll
+totalt 12
+lrwxrwxrwx. 1 ukd ukd 35 17 jul 15:54 symlink-to-ignore.knz -> test.txt.knz-old-tLZX_eNONE-no-size
+-rw-r-----. 1 ukd ukd 53 15 jul 11:09 test.txt.knz-new-tNONE_eTPAQ-no-size
+-rwxr-xr-x. 1 ukd ukd 62 15 jul 11:30 test.txt.knz-old-tLZX_eNONE-no-size
+
+### Test recompressing with new kanzi (will add size in header to new file, now no errors)
+
+$ ../recompress-old-kanzi-files.sh *.knz*
+../recompress-old-kanzi-files.sh: 'symlink-to-ignore.knz' skipped because not a regular file or not readable
+test.txt.knz-new-tNONE_eTPAQ-no-size : OK
+test.txt.knz-old-tLZX_eNONE-no-size : OK
+
+$ ll
+totalt 12
+lrwxrwxrwx. 1 ukd ukd 35 17 jul 15:54 symlink-to-ignore.knz -> test.txt.knz-old-tLZX_eNONE-no-size
+-rw-r-----. 1 ukd ukd 63 15 jul 11:09 test.txt.knz-new-tNONE_eTPAQ-no-size
+-rwxr-xr-x. 1 ukd ukd 62 15 jul 11:30 test.txt.knz-old-tLZX_eNONE-no-size
+
+### mtimes, permissions, blocksizes and transforms/codecs preserved; checksum and size in all headers
+
+$ for f in test*;do echo "=== $f ==="; kanzi -d -v 3 -o none -i $f|grep -E 'Block|stage|Original';done
+=== test.txt.knz-new-tNONE_eTPAQ-no-size ===
+Block checksum: 64 bits
+Block size: 4194304 bytes
+Using TPAQ entropy codec (stage 1)
+Using no transform (stage 2)
+Original size: 27 bytes
+=== test.txt.knz-old-tLZX_eNONE-no-size ===
+Block checksum: 64 bits
+Block size: 4194304 bytes
+Using no entropy codec (stage 1)
+Using LZX transform (stage 2)
+Original size: 27 bytes
+```
 
 ## size-kanzi-algos-etc.sh
 
