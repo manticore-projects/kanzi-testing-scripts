@@ -4,6 +4,7 @@
 This repository currently contains these bash scripts for testing and verifying [kanzi](https://github.com/flanglet/kanzi-cpp):
 
 * [checksum-kanzi-d-filelist.sh](#checksum-kanzi-d-filelist.sh)
+* [recompress-old-kanzi-files.sh](#recompress-old-kanzi-files.sh)
 * [size-kanzi-algos-etc.sh](#size-kanzi-algos-etc.sh)
 
 ## checksum-kanzi-d-filelist.sh
@@ -34,6 +35,18 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 test.txt.knz-ne
 ```
 Originally created for verifying a previously saved list of filenames and comparing a new list of checksums with an older one.
 That's why it doesn't read the names of the compressed files as individual arguments.
+
+## recompress-old-kanzi-files.sh
+
+Recompresses kanzi-compressed files with the same blocksize, transforms and entropy codec as
+they were previously compressed with, but possibly using another kanzi version for the initial
+decompression than for the recompression.  The script also does this:
+
+* verifies, possibly with a third kanzi version, that the recompressed file can be correctly decompressed
+* adds 64-bit checksum at end of each block (option -x64 to kanzi) no matter if in original or not
+* adds decompressed file size in file header (since compression done of real file, not from pipe)
+
+See comments in script for more detail.
 
 ## size-kanzi-algos-etc.sh
 
