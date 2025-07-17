@@ -130,6 +130,8 @@ for trans in \
     TEXT+RLT+LZP+RLT      TEXT+RLT+PACK+LZP+RLT \
     TEXT+RLT+LZP+PACK     TEXT+RLT+PACK+RLT+LZP \
     TEXT+RLT+LZP+PACK+RLT TEXT+PACK+RLT         \
+    EXE+TEXT+RLT+UTF+PACK EXE+TEXT+RLT+UTF+DNA  \
+    EXE+TEXT+RLT          EXE+TEXT              \
     TEXT+BWTS+SRT+ZRLT    BWTS+SRT+ZRLT         \
     TEXT+BWTS+MTFT+RLT    BWTS+MTFT+RLT         \
     TEXT+BWT+MTFT+RLT     BWT+MTFT+RLT
@@ -162,7 +164,7 @@ for t1 in $trans_list; do
     done
 done | parallel -j$NJOBS 'printf "%9d kanzi {=uq=}\n" $(kanzi -c -j 1 {=uq=} -i "$ifile" -o stdout|wc -c)'
 
-trans_list="TEXT PACK ZRLT RLT BWTS BWT LZP MTFT SRT LZ LZX ROLZ ROLZX RANK EXE MM"
+trans_list="TEXT RLT PACK ZRLT BWTS BWT LZP MTFT SRT LZ LZX ROLZ ROLZX RANK EXE MM"
 
 # kanzi with two non-null transforms and one entropy coding, testing NJOBS in parallel, forcing blocksize 64 MiB
 for t1 in $trans_list; do
