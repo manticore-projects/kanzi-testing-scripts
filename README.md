@@ -3,9 +3,9 @@
 
 This repository currently contains these bash scripts for testing and verifying [kanzi](https://github.com/flanglet/kanzi-cpp):
 
-* [checksum-kanzi-d-filelist.sh](#checksum-kanzi-d-filelist.sh)
-* [recompress-old-kanzi-files.sh](#recompress-old-kanzi-files.sh)
-* [size-kanzi-algos-etc.sh](#size-kanzi-algos-etc.sh)
+* [checksum-kanzi-d-filelist.sh](#checksum-kanzi-d-filelistsh)
+* [recompress-old-kanzi-files.sh](#recompress-old-kanzi-filessh)
+* [size-kanzi-algos-etc.sh](#size-kanzi-algos-etcsh)
 
 ## checksum-kanzi-d-filelist.sh
 
