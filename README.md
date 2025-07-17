@@ -11,7 +11,7 @@ This repository currently contains these bash scripts for testing and verifying 
 A quite short and simple script for generating a list of sha256sums of decompressions of kanzi-compressed files.
 Includes almost no error checking, so completely failed kanzi decompressions will return the checksum of a zero-length file
 like in this example where `kanzi` is a new version (July 2025) unable to decompress some earlier test files
-(compressed with a December 2024 kanzi, bitstream version 6 format being in development and
+(compressed with a December 2024 kanzi.old, bitstream version 6 format being in development and
 [changing incompatibly](https://github.com/flanglet/kanzi-cpp/commit/140790b26a6acbd413b145d248f9967ff4cc00ad)
 in that period):
 ```
@@ -23,6 +23,14 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 test.txt.knz-ol
 Invalid bitstream, header checksum mismatch. Error code: 19
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 test.txt.knz-old-tNONE_eTPAQ-with-size
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /dev/null
+
+$ ls -1 test.txt.knz-*tNONE*|KANZI=kanzi.old ../checksum-kanzi-d-filelist.sh /dev/stdin
+Invalid bitstream, header checksum mismatch. Error code: 19
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 test.txt.knz-new-tNONE_eTPAQ-no-size
+Invalid bitstream, header checksum mismatch. Error code: 19
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 test.txt.knz-new-tNONE_eTPAQ-with-size
+91a0b88ca03915f704ce7155b119a1b5b24621419f23e9ed5e4320be026e01c3 test.txt.knz-old-tNONE_eTPAQ-no-size
+91a0b88ca03915f704ce7155b119a1b5b24621419f23e9ed5e4320be026e01c3 test.txt.knz-old-tNONE_eTPAQ-with-size
 ```
 Originally created for verifying a previously saved list of filenames and comparing a new list of checksums with an older one.
 That's why it doesn't read the names of the compressed files as individual arguments.
