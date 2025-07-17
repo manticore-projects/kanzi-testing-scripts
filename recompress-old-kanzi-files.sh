@@ -56,18 +56,29 @@ for f in "$@"; do
         echo "$0: '$f' skipped because not a regular file or not readable" 1>&2
         continue
     fi
-    ### Step 1: Get info from block header -- skip file if not readable by kanzi decompression ###
-
-    # Force 2 threads even though reading only a block header.  This is to work around an old bug causing
-    # "No more data to read in the bitstream. Error code: 13" for some files; bug still here as of 2.3.0-254-gacf6e3dd.
-    # We read the first block header to determine block size, entropy codec and transform to use at recompress.
-    # Will fail if e.g. this file has already been recompressed with a newer incompatible kanzi, so in that case just
-    # skip the file gracefully and continue with the next one instead.
-    infolines=$("$OLDKANZI" -d --from=1 --to=1 -v 4 -j 2 -o none -i "$f") || \
-        { echo "$0: Error reading kanzi header of '$f', skipping it (consider changing OLDKANZI)" 1>&2; continue; }
+    ### Step 1: Decompress file to (possibly big) temporary output file in same dir as input, catching header info ###
+    fdir=`dirname "$f"`
+    fbig=`mktemp --tmpdir="$fdir"` || { echo "$0: mktemp in '$fdir' failed, aborting" 1>&2; exit 2; }
+    # Kanzi <= July 2025 unfortunately don't write verbosity output to stderr so we can't catch header info like this: 
+    #infolines=$("$OLDKANZI" -d -v 3 -i "$f" -o stdout 2>&1 >> "$fbig") || ...
+    #
+    # These older kanzis also can't get header info reliably with '--from=1 --to=1' (works on some files, not all).
+    # So instead, to keep using the temporary file securely, not yet exposing content to group/others, we run
+    # with a restricted umask and forced overwrite of the empty temporary file:
+    saved_umask=`umask`
+    umask 177
+    infolines=$("$OLDKANZI" -d -v 3 -f -i "$f" -o "$fbig")
+    dstatus=$?
+    umask $saved_umask
+    # Will have failed if e.g. this file has already been recompressed with a newer incompatible kanzi.
+    # So on failure we just skip the file gracefully and continue with the next one instead.
+    if [ $dstatus -ne 0 ]; then
+        echo "$0: Error decompressing '$f', skipping it (consider changing OLDKANZI)" 1>&2
+        rm "$fbig"
+        continue
+    fi
     #echo "DEBUG: infolines = '$infolines'"
-    #continue
-    # Parse output expected to contain lines like these:
+    # Parse output expected to contain lines like these (valid for kanzi Dec 2024 - July 2025 at least):
     #    Block size: 4194304 bytes
     #    Using no entropy codec (stage 1)
     #    Using PACK+LZ transform (stage 2)
@@ -80,11 +91,7 @@ for f in "$@"; do
     [ "$entropy" != "?" ] || { echo "$0: Couldn't determine entropy for '$f', skipping this file" 1>&2; continue; }
     [ "$transform" != "?" ] || { echo "$0: Couldn't determine transform for '$f', skipping this file" 1>&2; continue; }
 
-    ### Step 2: Decompress file to (possibly big) temporary output file in same dir as input; get checksum of it ###
-    fdir=`dirname "$f"`
-    fbig=`mktemp --tmpdir="$fdir"` || { echo "$0: mktemp in '$fdir' failed, aborting" 1>&2; exit 2; }
-    "$OLDKANZI" -d -i "$f" -o stdout >> "$fbig" || \
-        { echo "$0: Error decompressing '$f', aborting" 1>&2; echo "  To cleanup: rm '$fbig'"; exit 3; }
+    ### Step 2: Get checksum of uncompressed file ###
     # Note: important to checksum from stdin so that output string doesn't depend on the file name
     csumstr1=$("$HASHPROG" < "$fbig")
 
