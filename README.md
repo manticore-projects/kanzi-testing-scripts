@@ -1,7 +1,33 @@
 # Kanzi testing scripts
 
 
-Initially this repository just contains a single bash script.  More may be added later.
+This repository currently contains these bash scripts for testing and verifying [kanzi](https://github.com/flanglet/kanzi-cpp):
+
+* [checksum-kanzi-d-filelist.sh](#checksum-kanzi-d-filelist.sh)
+* [size-kanzi-algos-etc.sh](#size-kanzi-algos-etc.sh)
+
+## checksum-kanzi-d-filelist.sh
+
+A quite short and simple script for generating a list of sha256sums of decompressions of kanzi-compressed files.
+Includes almost no error checking, so completely failed kanzi decompressions will return the checksum of a zero-length file
+like in this example where `kanzi` is a new version (July 2025) unable to decompress some earlier test files
+(compressed with a December 2024 kanzi, bitstream version 6 format being in development and
+[changing incompatibly](https://github.com/flanglet/kanzi-cpp/commit/140790b26a6acbd413b145d248f9967ff4cc00ad)
+in that period):
+```
+$ ls -1 test.txt.knz-*tNONE* | ../checksum-kanzi-d-filelist.sh /dev/stdin; sha256sum /dev/null
+91a0b88ca03915f704ce7155b119a1b5b24621419f23e9ed5e4320be026e01c3 test.txt.knz-new-tNONE_eTPAQ-no-size
+91a0b88ca03915f704ce7155b119a1b5b24621419f23e9ed5e4320be026e01c3 test.txt.knz-new-tNONE_eTPAQ-with-size
+Invalid bitstream, header checksum mismatch. Error code: 19
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 test.txt.knz-old-tNONE_eTPAQ-no-size
+Invalid bitstream, header checksum mismatch. Error code: 19
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 test.txt.knz-old-tNONE_eTPAQ-with-size
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /dev/null
+```
+Originally created for verifying a previously saved list of filenames and comparing a new list of checksums with an older one.
+That's why it doesn't read the names of the compressed files as individual arguments.
+
+## size-kanzi-algos-etc.sh
 
 The main focus of the script is to test [kanzi](https://github.com/flanglet/kanzi-cpp) compression
 of a given file with a lot of different combinations of transforms and entropy coders.
@@ -14,7 +40,7 @@ where the size is the size of the input file when processed by the listed compre
 (or `cat` = no compression).  The output should be redirected to a log file and sorted numerically
 by size after the script has finished.
 
-## Prerequisites
+### Prerequisites
 
 * [GNU Parallel](https://www.gnu.org/software/parallel/)
 * [kanzi](https://github.com/flanglet/kanzi-cpp) (Go or Java version may work too if you name it "kanzi")
@@ -30,7 +56,7 @@ by size after the script has finished.
 	- [gzip](https://www.gzip.org/)
 	- [arj](http://arj.sourceforge.net/)
 
-## Example 1 -- a default full run on enwik7
+### Example 1 -- a default full run on enwik7
 
 Here the script is first run on the exactly 10000000 bytes large
 [enwik7](http://www.mattmahoney.net/dc/text.html) text file,
@@ -67,7 +93,7 @@ søn  5 jan 13:47:29 CET 2025
 søn  5 jan 11:36:48 CET 2025
 ```
 
-## Example 2 -- interrupted run with explicit NJOBS on a 191 MiB highly repetitive journalctl log file
+### Example 2 -- interrupted run with explicit NJOBS on a 191 MiB highly repetitive journalctl log file
 
 In practice I didn't set NJOBS explicitly but I *could* have done so like this:
 ```
@@ -125,6 +151,6 @@ This example shows that in some cases kanzi is very sensitive to block size -- b
 but that with careful tuning it may beat even (untuned) zpaq considerably on size even though being
 approximately a factor 10 faster than zpaq with these options.
 
-## More test results
+### More test results
 
 More test results and more detailed descriptions of the test files can be found in the [wiki](https://github.com/udickow/kanzi-testing-scripts/wiki).
