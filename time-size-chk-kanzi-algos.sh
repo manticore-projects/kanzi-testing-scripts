@@ -98,6 +98,6 @@ done
 
 # Finally two custom combinations of transforms and entropy codecs optimal for some file types (see wiki)
 do_test -b 64m -j "$NJOBS" -t TEXT+BWTS+SRT+ZRLT -e TPAQ
-do_test -b 256m -t EXE+TEXT+RLT+UTF+PACK -e TPAQX
+do_test -b 256m -j 1 -t EXE+TEXT+RLT+UTF+PACK -e TPAQX
 
 rm "$ctfile" "$dtfile"
