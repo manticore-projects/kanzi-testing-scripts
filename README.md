@@ -5,6 +5,7 @@ This repository currently contains these bash scripts for testing and verifying 
 
 * [checksum-kanzi-d-filelist.sh](#checksum-kanzi-d-filelistsh)
 * [recompress-old-kanzi-files.sh](#recompress-old-kanzi-filessh)
+* [time-size-chk-kanzi-algos.sh](#time-size-chk-kanzi-algossh)
 * [size-kanzi-algos-etc.sh](#size-kanzi-algos-etcsh)
 
 ## checksum-kanzi-d-filelist.sh
@@ -96,6 +97,65 @@ Block size: 4194304 bytes
 Using no entropy codec (stage 1)
 Using LZX transform (stage 2)
 Original size: 27 bytes
+```
+
+## time-size-chk-kanzi-algos.sh
+
+For a single given input file, test kanzi compression and decompression with each possible transform,
+entropy codec and preset level in turn, plus a few custom combinations.  Verify that the decompression
+output has the same sha256sum (or other external checksum) as the original file.  Produce a single line of
+output for each test with this information:
+
+    Checksum_status(OK/FAIL) Compressed_size(bytes) Compression_time(ms) Decompression_time(ms) | Kanzi_args...
+
+The timings are the net values measured by kanzi itself.
+
+If used with a not-too-large input file, this script is also useful for the profile data gathering phase
+of a PGO-build of kanzi (Profile Guided Optimization).
+
+Sample run with a kanzi only a few commits before the 2.4.0 release:
+```
+$ \time .../kanzi-testing-scripts/time-size-chk-kanzi-algos.sh enwik7
+OK     10000073      13      13  |  -x64 -j 8 -t NONE -e NONE
+OK      7275657      26      13  |  -x64 -j 8 -t PACK -e NONE
+OK     10000148     184      89  |  -x64 -j 8 -t BWT -e NONE
+OK     10000073     210     275  |  -x64 -j 8 -t BWTS -e NONE
+OK      4568822      26      12  |  -x64 -j 8 -t LZ -e NONE
+OK      4394238      43      12  |  -x64 -j 8 -t LZX -e NONE
+OK      9892455      20      15  |  -x64 -j 8 -t LZP -e NONE
+OK      3404563      66      33  |  -x64 -j 8 -t ROLZ -e NONE
+OK      3180547     107      88  |  -x64 -j 8 -t ROLZX -e NONE
+OK      9948830      17      15  |  -x64 -j 8 -t RLT -e NONE
+OK     10000073      15      17  |  -x64 -j 8 -t ZRLT -e NONE
+OK     10000073      90      62  |  -x64 -j 8 -t MTFT -e NONE
+OK     10000073      72      58  |  -x64 -j 8 -t RANK -e NONE
+OK     10001386      82      53  |  -x64 -j 8 -t SRT -e NONE
+OK      5762028      32      21  |  -x64 -j 8 -t TEXT -e NONE
+OK     10000073      16      13  |  -x64 -j 8 -t EXE -e NONE
+OK     10000073      14      13  |  -x64 -j 8 -t MM -e NONE
+OK     10000073      15      14  |  -x64 -j 8 -t UTF -e NONE
+OK     10000073      13      13  |  -x64 -j 8 -t DNA -e NONE
+OK      6358845      25      26  |  -x64 -b 64m -j 8 -t NONE -e HUFFMAN
+OK      6333658      31      32  |  -x64 -b 64m -j 8 -t NONE -e ANS0
+OK      4881128      42      59  |  -x64 -b 64m -j 8 -t NONE -e ANS1
+OK      6338186      44     110  |  -x64 -b 64m -j 8 -t NONE -e RANGE
+OK      5007320     552     666  |  -x64 -b 64m -j 8 -t NONE -e CM
+OK      5893225     166     238  |  -x64 -b 64m -j 8 -t NONE -e FPAQ
+OK      2178276    2979    3190  |  -x64 -b 64m -j 8 -t NONE -e TPAQ
+OK      2144740    4534    4526  |  -x64 -b 64m -j 8 -t NONE -e TPAQX
+OK      4394238      47      12  |  -x64 -j 8 -l 1
+OK      3787163      30      15  |  -x64 -j 8 -l 2
+OK      3297060      71      27  |  -x64 -j 8 -l 3
+OK      3005415      77      48  |  -x64 -j 8 -l 4
+OK      2670752     158      90  |  -x64 -j 8 -l 5
+OK      2441354     378     235  |  -x64 -j 8 -l 6
+OK      2324665     597     470  |  -x64 -j 8 -l 7
+OK      2159529    2039    2125  |  -x64 -j 8 -l 8
+OK      2106385    3049    3134  |  -x64 -j 8 -l 9
+OK      2345632    1873    1957  |  -x64 -b 64m -j 8 -t TEXT+BWTS+SRT+ZRLT -e TPAQ
+OK      2102833    3558    3604  |  -x64 -b 256m -t EXE+TEXT+RLT+UTF+PACK -e TPAQX
+42.38user 5.40system 0:43.46elapsed 109%CPU (0avgtext+0avgdata 1428196maxresident)k
+0inputs+0outputs (0major+3348629minor)pagefaults 0swaps
 ```
 
 ## size-kanzi-algos-etc.sh
